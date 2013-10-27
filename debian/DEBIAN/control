@@ -1,0 +1,9 @@
+Package: cartboy
+Version: 0.1-1
+Architecture: all
+Maintainer: Kaspars Mickevics <kaspars@fx.lv>
+Installed-Size: 888
+Depends: python (>= 2.6.0), python-psutil (>= 0.1.0), python-argparse (>= 1.1)
+Section: admin
+Priority: optional
+Description: Universal application restarter
