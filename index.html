@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Cartboy by fxlv</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Cartboy</h1>
+        <h2>Cartboy, the universal autorestarter</h2>
+        <a href="https://github.com/fxlv/cartboy" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a name="cartboy-the-universal-restarter" class="anchor" href="#cartboy-the-universal-restarter"><span class="octicon octicon-link"></span></a>Cartboy, the universal restarter</h1>
+
+<h2>
+<a name="what" class="anchor" href="#what"><span class="octicon octicon-link"></span></a>What?</h2>
+
+<p>Cartboy is a python script that tries to be a more or less universal restarter for any sort of application.</p>
+
+<p>Surely there must be some better alternatives out there but I strongly believe that reinventing the wheel once in a while can't really hurt.
+Applications fail and sometimes crash, that is inevitable. Of course you should debug and resolve the issue but this is not always possible and sometimes the only solution is an "autorestarter".
+And this is exactly where cartboy comes in. Why choose cartboy?
+Main strengths:</p>
+
+<ul>
+<li>extensive logging </li>
+<li>easy to set up, you don't need to know python to use cartboy</li>
+<li>very flexible, you can configure different actions for status checking and starting of applications easily</li>
+</ul><p>Configuration is held in /etc/cartboy. Currently this means just the "/etc/cartboy/applications" directory, but this will change in future.</p>
+
+<p>Cartboy debian package also installs a cron script in /etc/cron.d/cartboy that executes cartboy.py once per minute by default.</p>
+
+<p>Log file is written to /var/log/cartboy.log and it is quite extensive by default, so you should probably set up some sort of log rotation (logrotate script is not included in the cartboy package at the moment).</p>
+
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<pre><code>dpkg -i cartboy.deb
+</code></pre>
+
+<p>yes, that is it</p>
+
+<h2>
+<a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h2>
+
+<p>Configuration files live in /etc/cartboy and individual applications are defined in /etc/cartboy/applications, 
+each application directory has to contain 2 scripts: <em>pid</em> and <em>start</em> and it can optionally also 
+contain a file <em>name</em> which, as you might guess, will be used to set application name 
+(by default application name is the name of the directory) and it can also contain optional file <em>alert</em> 
+that will be executed if cartboy fails to start the application for several times, more on that later.</p>
+
+<h3>
+<a name="quick-configuration-example" class="anchor" href="#quick-configuration-example"><span class="octicon octicon-link"></span></a>Quick configuration example</h3>
+
+<p>Lets look at an example to better illustrate the minimal configuration.
+So lets say we have Nginx installed and we want to set up an autorestarter for it.</p>
+
+<p>Create a directory for it 
+    mkdir /etc/cartboy/applications/nginx
+now set up the minimal set of scripts for it
+    echo "cat /var/run/nginx.pid" &gt;  /etc/cartboy/applications/nginx/pid
+    echo "/etc/init.d/nginx start" &gt;  /etc/cartboy/applications/nginx/start
+That's it. It really is that simple. 
+If you want to, you can also optionally provide a better name for the application like so:
+    echo "Nginx web server" &gt; /etc/cartboy/applications/nginx/name</p>
+
+<h3>
+<a name="more-details-on-configuration" class="anchor" href="#more-details-on-configuration"><span class="octicon octicon-link"></span></a>More details on configuration</h3>
+
+<p>Lets look at all the application files that you can set up.</p>
+
+<ul>
+<li>
+<em>pid</em> - this script has to return the PID of the application. 
+If the applications has a pidfile, then you can just <strong>cat</strong> it like so <code>cat /var/run/nginx.pid</code>, 
+if it does not have a pidfile, you can use, for example, <strong>pgrep</strong> like so <code>pgrep -f "nginx: master process"</code>. 
+It does not really matter how you do it as long as your script returns a PID. </li>
+<li>
+<em>start</em> - this, as you can probably guess, is the script that will be executed in order to start the application. 
+Again, this can be anything, as long as it gets the job done.</li>
+<li>
+<em>name</em> - this is just a text file containing the name of the application. It can contain whitespaces. Only the first line of the file will be read.</li>
+<li>
+<em>alert</em> - this script will be executed if Cartboy fails to start the application for 3 times (can be overriden in the configuration). 
+This can be quite usefull when the application misbehaves. Depending on what sort of monitoring system you use this script can create some 
+file that will be read by your monitorins system agent or can, for example, send an email to you. 
+Again, as with all the previous files, it really is up to the sysadmin to decide if this functionality is necessary and what to do with it.</li>
+</ul><h2>
+<a name="how-does-it-work" class="anchor" href="#how-does-it-work"><span class="octicon octicon-link"></span></a>How does it work?</h2>
+
+<p>Quite simple, really. Cartboy is executed from crontab, it checks all the directories under /etc/cartboy/applications 
+to find any apps that are configured for autorestarting. it does some simple validation just to check if the minimal set of files exists for every application.
+For every application cartboy:</p>
+
+<pre><code>* executes the _pid_ file to get the pid
+* checks the processlist to see if the apllication is running
+* if it is running then that's it for this application
+* if the application is not running, cartboy checks if it has already tried starting it up
+    by default cartboy will try to start an application for 3 consecutive times, after that a _backoff_ time will kick in, where there will be no more tries to start it for the duration of this time.
+* if the application fails to start for more than 10 consecutive times, cartboy will increase the backoff time 10 times
+* if application is started up successfully cartboy resets the failure counter
+</code></pre>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/fxlv/cartboy/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/fxlv/cartboy/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/fxlv/cartboy"></a> is maintained by <a href="https://github.com/fxlv">fxlv</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
