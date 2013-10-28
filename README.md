@@ -19,9 +19,13 @@ Log file is written to /var/log/cartboy.log and it is quite extensive by default
 
 ## Installation
 
+For debian based systems, build the .deb using the provided script and install with
+
 	dpkg -i cartboy.deb
 
 yes, that is it
+
+For everyone else, just copy the `cartboy.py` to somewhere in the path and create the `/etc/cartboy` for config files
 
 
 ## Configuration 
